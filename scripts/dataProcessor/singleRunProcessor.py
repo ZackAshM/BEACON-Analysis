@@ -43,7 +43,8 @@ print(f'[{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] PROCESSING RUN
 _RUNS = []
 _ENTRIES = []
 _TRIG_TYPES = []
-_TIMES = []
+_TIMES = [] # zulu seconds
+_SUBTIMES = [] # subseconds in nanoseconds
 
 # -- Scint
 _SC_SCORES = []
@@ -76,8 +77,7 @@ _RFH_TIMEDELAYS_RANGES = []
 _RFH_TIMEDELAYS_MEANS = []
 _RFH_HILBERT_PEAK_RANGES = []
 _RFH_HILBERT_PEAK_MEANS = []
-_RFH_HILBERT_PEAK_LOCATION_MINS = [] # ratio of peak index to size of wfm (i.e. penalize when closer to 1)
-_RFH_HILBERT_PEAK_LOCATION_MAXS = []
+_RFH_HILBERT_PEAK_LOCATION_RANGES = [] # ratio of peak index to size of wfm (i.e. penalize when closer to 1)
 _RFH_HILBERT_PEAK_LOCATION_MEANS = []
 _RFH_COHERENT_HILBERT_PEAK_LOCATIONS = []
 _RFH_IMPULSIVITY_MINS = []
@@ -99,8 +99,7 @@ _RFV_SNR_MEANS = []
 # _RFV_TIMEDELAYS_MEANS = []
 _RFV_HILBERT_PEAK_RANGES = []
 _RFV_HILBERT_PEAK_MEANS = []
-_RFV_HILBERT_PEAK_LOCATION_MINS = []
-_RFV_HILBERT_PEAK_LOCATION_MAXS = []
+_RFV_HILBERT_PEAK_LOCATION_RANGES = []
 _RFV_HILBERT_PEAK_LOCATION_MEANS = []
 # _RFH_COHERENT_HILBERT_PEAK_LOCATIONS = []
 _RFV_IMPULSIVITY_MINS = []
@@ -159,6 +158,7 @@ for entry in range(totalEntries):
         # General Variables
         hdr = reader.header()
         evt_time = hdr.readout_time
+        evt_subtime = hdr.readout_time_ns
     
         # Reconstruction Variables
         # -- scints
@@ -267,6 +267,7 @@ for entry in range(totalEntries):
         _ENTRIES.append(entry)
         _TRIG_TYPES.append(triggerTypes[entry])
         _TIMES.append(evt_time)
+        _SUBTIMES.append(evt_subtime)
         
         # -- Scints
         _SC_SCORES.append( np.max(sc_map) )
@@ -299,8 +300,7 @@ for entry in range(totalEntries):
         _RFH_TIMEDELAYS_MEANS.append( np.mean(rfH_timeDelays) )
         _RFH_HILBERT_PEAK_RANGES.append( np.max(rfH_peaks) - np.min(rfH_peaks) )
         _RFH_HILBERT_PEAK_MEANS.append( np.mean(rfH_peaks) )
-        _RFH_HILBERT_PEAK_LOCATION_MINS.append( np.min(rfH_peakIdxRatios) )
-        _RFH_HILBERT_PEAK_LOCATION_MAXS.append( np.max(rfH_peakIdxRatios) )
+        _RFH_HILBERT_PEAK_LOCATION_RANGES.append( np.max(rfH_peakIdxRatios) - np.min(rfH_peakIdxRatios) )
         _RFH_HILBERT_PEAK_LOCATION_MEANS.append( np.mean(rfH_peakIdxRatios) )
         _RFH_COHERENT_HILBERT_PEAK_LOCATIONS.append( rfH_coherentHPeakLoc )
         _RFH_IMPULSIVITY_MINS.append( np.min(rfH_imps) )
@@ -322,8 +322,7 @@ for entry in range(totalEntries):
         # _RFV_TIMEDELAYS_MEANS.append( np.mean(rfV_timeDelays) )
         _RFV_HILBERT_PEAK_RANGES.append( np.max(rfV_peaks) - np.min(rfV_peaks) )
         _RFV_HILBERT_PEAK_MEANS.append( np.mean(rfV_peaks) )
-        _RFV_HILBERT_PEAK_LOCATION_MINS.append( np.min(rfV_peakIdxRatios) )
-        _RFV_HILBERT_PEAK_LOCATION_MAXS.append( np.max(rfV_peakIdxRatios) )
+        _RFV_HILBERT_PEAK_LOCATION_RANGES.append( np.max(rfV_peakIdxRatios) - np.min(rfV_peakIdxRatios) )
         _RFV_HILBERT_PEAK_LOCATION_MEANS.append( np.mean(rfV_peakIdxRatios) )
         # _RFV_COHERENT_HILBERT_PEAK_LOCATIONS.append( rfV_coherentHPeakLoc )
         _RFV_IMPULSIVITY_MINS.append( np.min(rfV_imps) )
@@ -358,6 +357,7 @@ BATCH_DATA = pd.DataFrame({
     'entry' : _ENTRIES,
     'type' : _TRIG_TYPES,
     'time' : _TIMES,
+    'subtime' : _SUBTIMES,
     
     'sc score' : _SC_SCORES,
     'sc zen' : _SC_ZENITHS,
@@ -388,8 +388,7 @@ BATCH_DATA = pd.DataFrame({
     'rfH time delay mean' : _RFH_TIMEDELAYS_MEANS,
     'rfH h peak range' : _RFH_HILBERT_PEAK_RANGES,
     'rfH h peak mean' : _RFH_HILBERT_PEAK_MEANS,
-    'rfH h peak loc min' : _RFH_HILBERT_PEAK_LOCATION_MINS,
-    'rfH h peak loc max' : _RFH_HILBERT_PEAK_LOCATION_MAXS,
+    'rfH h peak loc range' : _RFH_HILBERT_PEAK_LOCATION_RANGES,
     'rfH h peak loc mean' : _RFH_HILBERT_PEAK_LOCATION_MEANS,
     'rfH coherent h peak loc' : _RFH_COHERENT_HILBERT_PEAK_LOCATIONS,
     'rfH impulsitivy min' : _RFH_IMPULSIVITY_MINS,
@@ -410,8 +409,7 @@ BATCH_DATA = pd.DataFrame({
     # 'rfV time delay mean' : _RFV_TIMEDELAYS_MEANS,
     'rfV h peak range' : _RFV_HILBERT_PEAK_RANGES,
     'rfV h peak mean' : _RFV_HILBERT_PEAK_MEANS,
-    'rfV h peak loc min' : _RFV_HILBERT_PEAK_LOCATION_MINS,
-    'rfV h peak loc max' : _RFV_HILBERT_PEAK_LOCATION_MAXS,
+    'rfV h peak loc range' : _RFV_HILBERT_PEAK_LOCATION_RANGES,
     'rfV h peak loc mean' : _RFV_HILBERT_PEAK_LOCATION_MEANS,
     # 'rfV coherent h peak loc' : _RFV_COHERENT_HILBERT_PEAK_LOCATIONS,
     'rfV impulsitivy min' : _RFV_IMPULSIVITY_MINS,
