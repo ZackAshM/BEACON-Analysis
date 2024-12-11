@@ -2,6 +2,27 @@
 
 This package is an ensemble of analysis tools for the Beamforming Elevated Array for COsmic Neutrinos (BEACON). 
 
+## Getting Started
+To get started with the project, follow these steps:
+
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/zackashm/BEACON-Analysis.git
+    ```
+2. Install the required dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+    
+    **Note (ROOT):** You must have ROOT installed. The version I used was ROOT 6.28/06 with c++ (GCC) 13.2.0. Instructions for installations can be found on the ROOT website.
+
+    **Note (Jupyter Notebook):** Most versions of Jupyter Notebook will work. The notebooks can also be used in other cell-based apps. 
+    * To install packages used only in the notebooks, run:
+        ```bash
+        cd notebooks/
+        pip install -r requirements.txt
+        ```
+
 ## Contents
 
 ### analysis
