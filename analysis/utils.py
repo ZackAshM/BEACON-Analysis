@@ -1,4 +1,4 @@
-# Stand-alone helper functions
+'''Stand-alone helper functions'''
 
 from cfg import config
 import numpy as np
@@ -65,6 +65,45 @@ def sipmPulse(t, amp=int(0.15*config.ADC_RANGE), t0=int(0.07*config.SAMPLE_SIZE*
     norm_pulse = pulse / pulse.max()
     return amp * norm_pulse
 
+
+def getPulseWidths(wfm, t=None):
+    '''
+    Returns an array of delta time widths of each pulse in the given waveform. The width is determined
+    by the 0's on either side of the pulse max.
+
+    Parameters
+    ----------
+    wfm : array
+        The voltage array in ADU.
+    t : array, optional
+        The time array. Uniformed spacing assumed.
+
+    Returns
+    -------
+    widths : array
+        The array of pulse widths. If t is given, it is in the same units. Otherwise, it is a 
+        width in index.
+
+    See Also
+    --------
+    analysis.utils.getPeaks
+        For how each pulse is identified.
+    '''    
+
+    widths = []
+    peakIdx, peakAmp = getPeaks(wfm)
+
+    for idx in peakIdx:
+        leftIdx, rightIdx = findNearestIndices(wfm, idx, 0) # get indices of 0 nearest to idx in the wfm
+        deltaIdx = rightIdx - leftIdx
+        if t is None:
+            widths.append(deltaIdx)
+        else:
+            widths.append(deltaIdx * (t[1]-t[0])) # uniform time spacing assumed
+
+    return np.array(widths)
+        
+        
 
 def getPeaks(wfm, width=24):
     '''
@@ -227,6 +266,7 @@ def getRisetimes(t, wfm, cfd=0.5):
 
     # return (np.array([t50]), np.array([dt50]))
 
+
 def integratePulses(t, wfm):
     '''
     Returns the integration over each pulse, over the whole waveform, and over only positive values of the waveform. 
@@ -266,6 +306,15 @@ def integratePulses(t, wfm):
     posIntegration = (t[1]-t[0])*np.sum(posWfm)
     
     return (pulseIntegrations, pulseIndices, fullIntegration, posIntegration)
+
+
+def findNearestIndices(arr, index, value, margin=1e-5):
+        '''Get nearest left and right indices to index corresponding to value in arr within margin'''
+        leftIdxs = np.where(np.abs(np.array(arr[:index]) - value) <= margin)[0]
+        rightIdxs = np.where(np.abs(np.array(arr[index+1:]) - value) <= margin)[0]
+        leftIdx = leftIdxs[-1] if len(leftIdxs) > 0 else index
+        rightIdx = rightIdxs[0] if len(rightIdxs) > 0 else index
+        return (left, right)
 
 # # No longer used
 # def getSimpleContour(image, thresh=0.5):
