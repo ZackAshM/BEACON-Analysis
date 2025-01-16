@@ -1,4 +1,4 @@
-# functions for beacon event reconstruction, split up by RF and Scint
+'''functions for beacon event reconstruction, split up by RF and Scint'''
 from analysis.reader import Reader
 from analysis.sinesubtraction import SineSubtract
 from analysis import utils
