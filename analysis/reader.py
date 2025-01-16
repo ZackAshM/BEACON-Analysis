@@ -1,11 +1,13 @@
 #! /usr/bin/env python3 
 
-# -------------------------
-# Be warned, not all of the information in the comments is necessarily correct.
-# This class was originally written by Andrew Zeolla, Dan Southall, and Cosmin Deaconu (This is my guess, at least)
-# This class has been revised on Sept 19, 2024 by Zachary Martin (me)
-# The changes are mainly minor fixes that reflect the new status of the BEACON instrument, and some code clean up
-# -------------------------
+'''
+A Reader class for reading BEACON run data.
+
+Be warned, not all of the information in the comments is necessarily correct.
+This class was originally written by Andrew Zeolla, Dan Southall, and Cosmin Deaconu (This is my guess, at least)
+This class has been revised on Sept 19, 2024 by Zachary Martin (me)
+The changes are mainly minor fixes that reflect the new status of the BEACON instrument, and some code clean up
+'''
 
 import ROOT
 import numpy 
