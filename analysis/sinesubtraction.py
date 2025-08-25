@@ -17,8 +17,6 @@ class SineSubtract:
     max_freq = 0.7 (in GHz)
     Parameters
     ----------
-    reader : examples.beacon_data_reader.reader
-            The run reader you wish to load signals from.
     min_freq : float
         The minium frequency to be considered part of the same known CW source.  This should be given in GHz.  
     max_freq : float
