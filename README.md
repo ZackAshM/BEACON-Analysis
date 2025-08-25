@@ -28,7 +28,7 @@ To get started with the project, follow these steps:
 ### analysis
 This is the main module for analysis tools.
 1. **plotter.py**
-    * Tools related to plotting for convenience. Currently empty.
+    * Tools related to plotting for convenience.
 2. **reader.py**
     * Tools for reading raw BEACON data.
 3. **reconstruction.py**
