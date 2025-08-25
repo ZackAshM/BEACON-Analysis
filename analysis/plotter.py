@@ -4,7 +4,10 @@ from cfg import config
 from analysis.reader import Reader
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
+import dask.dataframe as dd
+import dask.array as da
 import datetime
 from collections.abc import Iterable
 
@@ -113,3 +116,97 @@ def plotEventWaveforms(runOrReader, entry, ylims=[None, None, None], monutau=Fal
         plt.savefig(save, dpi=300)
 
     return (fig, axes)
+
+
+def plotDistribution2D(df, column1, column2, bins1, bins2, hist=True, logHist=True, logc1=False, logc2=False, ax=None, markersize=4, **kwargs):
+    """Generates a histogram or scatter plot based on cuts and configuration."""
+    
+    # Detect if df is a Dask or Pandas DataFrame
+    is_dask = isinstance(df, dd.DataFrame)
+
+    # Copy DataFrame
+    cutData = df.copy()
+    
+    if len(cutData) == 0:
+        raise ValueError("No events left.")
+
+    # Compute min/max stats
+    if is_dask:
+        cutStats = pd.DataFrame({
+            'min': cutData.min(skipna=True).compute(),
+            'max': cutData.max(skipna=True).compute()
+        })
+    else:
+        cutStats = pd.DataFrame({
+            'min': cutData.min(skipna=True),
+            'max': cutData.max(skipna=True)
+        })
+
+    cutData1 = cutData[column1]
+    cutData2 = cutData[column2]
+
+    # Set axis limits
+    col1lim = (cutStats.loc[column1, 'min'], cutStats.loc[column1, 'max'])
+    col2lim = (cutStats.loc[column2, 'min'], cutStats.loc[column2, 'max'])
+
+    if logc1:
+        col1lim = (np.log10(col1lim[0]), np.log10(col1lim[1]))
+    if logc2:
+        col2lim = (np.log10(col2lim[0]), np.log10(col2lim[1]))
+
+    limits = (col1lim, col2lim)
+
+    if hist:
+        # Prepare data for histogram
+        histData1 = np.log10(cutData1) if logc1 else cutData1
+        histData2 = np.log10(cutData2) if logc2 else cutData2
+
+        # Convert to NumPy/Dask arrays based on DataFrame type
+        if is_dask:
+            histData1 = histData1.to_dask_array()
+            histData2 = histData2.to_dask_array()
+            
+            # Generate 2D histogram
+            histDelayed, col1edges, col2edges = da.histogram2d(
+            histData1, histData2,
+            bins=(bins1, bins2), range=limits
+            )
+        
+            # Compute histogram if using Dask
+            histVals = np.log10(histDelayed.T.compute()) if logHist else histDelayed.T.compute()
+            
+        else:
+            histData1 = histData1.values
+            histData2 = histData2.values
+
+            histDelayed, col1edges, col2edges = np.histogram2d(
+            histData1, histData2,
+            bins=(bins1, bins2), range=limits
+            )
+
+            histVals = np.log10(histDelayed.T) if logHist else histDelayed.T
+
+        # Plot histogram
+        pc = ax.pcolormesh(col1edges, col2edges, histVals)
+        if 'zen' in column2:
+            ax.get_yaxis().set_inverted(True)
+        plt.colorbar(pc, ax=ax, label='Log(Counts)' if logHist else 'Counts')
+
+        # Label axes
+        ax.set(xlabel=column1, ylabel=column2)
+
+        return (col1edges, col2edges, histVals)
+
+    else:
+        # Scatter plot
+        if is_dask:
+            sc = ax.scatter(cutData1.values.compute(), cutData2.values.compute(), s=markersize, **kwargs)
+        else:
+            sc = ax.scatter(cutData1.values, cutData2.values, s=markersize, **kwargs)
+
+        # Label axes
+        ax.set(xlabel=column1, ylabel=column2)
+
+        return sc
+
+    
