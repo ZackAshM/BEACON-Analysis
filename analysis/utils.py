@@ -91,6 +91,7 @@ def getPulseWidths(wfm, t=None):
     '''    
 
     widths = []
+    wfm[wfm<0] = 0 # positive only
     peakIdx, peakAmp = getPeaks(wfm)
 
     for idx in peakIdx:
@@ -102,8 +103,46 @@ def getPulseWidths(wfm, t=None):
             widths.append(deltaIdx * (t[1]-t[0])) # uniform time spacing assumed
 
     return np.array(widths)
-        
-        
+
+
+def getRiseDurations(wfm, t=None):
+    '''
+    Returns an array of time durations of each pulse's rising edge in the given waveform. The duration is defined as
+    the time from the peak to the first 0 before it.
+
+    Parameters
+    ----------
+    wfm : array
+        The voltage array in ADU.
+    t : array, optional
+        The time array. Uniformed spacing assumed.
+
+    Returns
+    -------
+    durations : array
+        The array of rising edge durations. If t is given, it is in the same units. Otherwise, it is a 
+        duration in index.
+
+    See Also
+    --------
+    analysis.utils.getPeaks
+        For how each peak is identified.
+    '''    
+
+    durations = []
+    wfm[wfm<0] = 0 # positive only
+    peakIdx, peakAmp = getPeaks(wfm)
+
+    for idx in peakIdx:
+        leftIdx = findNearestIndices(wfm, idx, 0)[0] # get indices of 0 nearest to idx in the wfm
+        deltaIdx = idx - leftIdx
+        if t is None:
+            durations.append(deltaIdx)
+        else:
+            durations.append(deltaIdx * (t[1]-t[0])) # uniform time spacing assumed
+
+    return np.array(durations)
+
 
 def getPeaks(wfm, width=24):
     '''
@@ -309,12 +348,37 @@ def integratePulses(t, wfm):
 
 
 def findNearestIndices(arr, index, value, margin=1e-5):
-        '''Get nearest left and right indices to index corresponding to value in arr within margin'''
-        leftIdxs = np.where(np.abs(np.array(arr[:index]) - value) <= margin)[0]
-        rightIdxs = np.where(np.abs(np.array(arr[index+1:]) - value) <= margin)[0]
-        leftIdx = leftIdxs[-1] if len(leftIdxs) > 0 else index
-        rightIdx = rightIdxs[0] if len(rightIdxs) > 0 else index
-        return (left, right)
+    '''Get nearest left and right indices to index corresponding to value in arr within margin'''
+    leftIdxs = np.where(np.abs(np.array(arr[:index]) - value) <= margin)[0]
+    rightIdxs = np.where(np.abs(np.array(arr[index+1:]) - value) <= margin)[0]
+    leftIdx = leftIdxs[-1] if len(leftIdxs) > 0 else index
+    rightIdx = rightIdxs[0]+index+1 if len(rightIdxs) > 0 else index
+    return (leftIdx, rightIdx)
+
+
+def skyDist(AzZen1, AzZen2):
+    '''
+    Returns angular distance in deg from 2 points.
+    AzZen = (az, zen) in degrees, where az and zen are either scalars, ndarrays, dask array, pandas Series, etc.
+    The returned object will match the type of az and zen.
+    '''
+
+    azDeg1, zen1 = AzZen1[0], AzZen1[1]
+    azDeg2, zen2 = AzZen2[0], AzZen2[1]
+    same_points = (azDeg1 == azDeg2) & (zen1 == zen2)
+    
+    el1 = np.deg2rad(-1*zen1 + 90) # to elevation in rads
+    el2 = np.deg2rad(-1*zen2 + 90)
+    az1 = np.deg2rad(azDeg1) # az in rads
+    az2 = np.deg2rad(azDeg2)
+    
+    # https://en.wikipedia.org/wiki/Angular_distance
+    cos_dist = np.cos(el1)*np.cos(el2)*np.cos(az1 - az2) + np.sin(el1)*np.sin(el2)
+    dist = np.rad2deg(np.arccos(cos_dist))
+    if len([dist]) > 1:
+        dist[same_points] = 0 # change floating point error NaNs to 0 aka when the points are equal
+    
+    return dist
 
 # # No longer used
 # def getSimpleContour(image, thresh=0.5):
