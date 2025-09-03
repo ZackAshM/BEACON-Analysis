@@ -28,7 +28,7 @@ To get started with the project, follow these steps:
 ### analysis
 This is the main module for analysis tools.
 1. **plotter.py**
-    * Tools related to plotting for convenience. Currently empty.
+    * Tools related to plotting for convenience.
 2. **reader.py**
     * Tools for reading raw BEACON data.
 3. **reconstruction.py**
@@ -44,6 +44,7 @@ This module defines calibration and configuration settings.
     * Contains calibration and information for the scintillator array and RF antenna array.
 2. **config.py**
     * Header module containing global variables defining a configuration for the analysis.
+    * NOTE!!! This file may contain outdated variables, or may be missing variables that previous files refer to. It is up to the user to update this file as needed.
   
 ### scripts
 Contains macros for using the analysis package.
@@ -61,3 +62,4 @@ Contains Jupyter Notebooks to provide example code.
 
 ## Notable History
 * 2024/12/09 - Initial Commit
+* 2025/09/03 - I forgot to add comments on previous updates. But as of this date, there are a suite of tools in plotting and utils, as well as updated reconstuction functions. I have decided to keep notebooks, scripts and cfg/config.py as user-dependent files, meaning they won't be updated in this repo, and should instead be updated or written as the user desires. The current script is merely an example of using the tools in this package.
