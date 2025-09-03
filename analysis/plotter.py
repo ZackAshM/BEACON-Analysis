@@ -209,4 +209,58 @@ def plotDistribution2D(df, column1, column2, bins1, bins2, hist=True, logHist=Tr
 
         return sc
 
-    
+
+# to plot overlays of specific events, particularly candidate CR events
+_candidates1 = [(189, 26165), (254, 9824), (459, 13620), (500, 27996), (509, 9596), 
+              (522, 22089), (538, 27140), (627, 17475), (717, 21811), (766, 6785)]
+def plotOverlaidEvents(df, colx, coly=None, events=_candidates1, ax=None, legend=False, color=None, logx=False, logy=False, **kwargs):
+    """
+    Plots vlines onto 1D distribution plots (typically 1D histograms), and scatter points onto 2D distribution plots.
+    Plotting onto 2D only available if coly is given.
+    A color can be given for all overlaid data to follow, otherwise they will plot with different colors (pyplot Paired cmap).
+    Kwargs are fed into axvline for 1D, or scatter for 2D.
+    If ax not given, a (fig, ax) will be created and returned with a dataframe containing only the overlaid events. Otherwise,
+    (fig, ax) = (None, None) when returned.
+
+    Be aware that the events should be contained in df with columns 'run' and 'entry', as well as the desired colx and coly.
+    """
+
+    # get specific event data
+    events_simpledf = pd.DataFrame(events, columns=['run', 'entry'])
+    ### addColx = [] if colx in ['run', 'entry'] else [colx]
+    ### addColy = [] if coly in ['run', 'entry', colx, None] else [coly]
+    ### if data_df is None:
+    ###     fullData = dd.read_parquet(DATAFILES, columns=['run', 'entry'] + addColx + addColy, 
+    ###                                filters=cuts, assume_sorted=True)
+    ### else:
+    ###     fullData = data_df.copy()
+    data_df = df.copy()
+    overlaid_df = data_df.merge(events_simpledf, on=['run', 'entry'], how="inner")
+    if isinstance(overlaid_df, dd.DataFrame):
+        overlaid_df = overlaid_df.compute()
+
+    if logx: overlaid_df[colx] = overlaid_df[colx].apply(np.log10)
+    if logy: overlaid_df[coly] = overlaid_df[coly].apply(np.log10)
+
+    fig = None
+    if ax is None: 
+        fig, ax = plt.subplots(figsize=[10,7])
+        ax.set(xlabel=colx, ylabel=coly)
+
+    if coly is None: # plot vlines
+        plotData = overlaid_df[colx].values
+        for line_i, line in enumerate(plotData):
+            colour = [plt.cm.Paired(each) for each in np.linspace(0, 1, len(plotData))][line_i] if color is None else color
+            lineRun, lineEntry = overlaid_df.loc[:, ['run', 'entry']].values[line_i]
+            ax.axvline(line, ymin=0, ymax=1, label=f'{lineRun}, {lineEntry}', color=colour, **kwargs)
+    else: # scatter
+        plotData_colx = overlaid_df[colx].values
+        plotData_coly = overlaid_df[coly].values
+        for point_i, point in enumerate(zip(plotData_colx, plotData_coly)):
+            colour = [plt.cm.Paired(each) for each in np.linspace(0, 1, len(plotData_colx))][point_i] if color is None else color
+            pointRun, pointEntry = overlaid_df.loc[:, ['run', 'entry']].values[point_i]
+            ax.scatter(point[0], point[1], label=f'{pointRun}, {pointEntry}', color=colour, **kwargs)
+
+    if legend: ax.legend(loc='best')
+
+    return (fig, ax, overlaid_df)
