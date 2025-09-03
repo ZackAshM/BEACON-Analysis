@@ -91,11 +91,12 @@ def getPulseWidths(wfm, t=None):
     '''    
 
     widths = []
-    wfm[wfm<0] = 0 # positive only
+    posWfm = wfm.copy()
+    posWfm[posWfm < 0] = 0 # positive only
     peakIdx, peakAmp = getPeaks(wfm)
 
     for idx in peakIdx:
-        leftIdx, rightIdx = findNearestIndices(wfm, idx, 0) # get indices of 0 nearest to idx in the wfm
+        leftIdx, rightIdx = findNearestIndices(posWfm, idx, 0) # get indices of 0 nearest to idx in the wfm
         deltaIdx = rightIdx - leftIdx
         if t is None:
             widths.append(deltaIdx)
@@ -130,11 +131,12 @@ def getRiseDurations(wfm, t=None):
     '''    
 
     durations = []
-    wfm[wfm<0] = 0 # positive only
+    posWfm = wfm.copy()
+    posWfm[posWfm < 0] = 0 # positive only
     peakIdx, peakAmp = getPeaks(wfm)
 
     for idx in peakIdx:
-        leftIdx = findNearestIndices(wfm, idx, 0)[0] # get indices of 0 nearest to idx in the wfm
+        leftIdx = findNearestIndices(posWfm, idx, 0)[0] # get indices of 0 nearest to idx in the wfm
         deltaIdx = idx - leftIdx
         if t is None:
             durations.append(deltaIdx)
@@ -379,6 +381,18 @@ def skyDist(AzZen1, AzZen2):
         dist[same_points] = 0 # change floating point error NaNs to 0 aka when the points are equal
     
     return dist
+
+
+def getHorizon(azimuth, slope=config.HORIZON_SLOPE, behind=True):
+    '''
+    Return the horizon zenith value for a given azimuth in degrees and observation slope.
+    By default, it is assumed the horizon behind (i.e. 90 < azimuth < 270) is non-sloped (and thus at 90deg).
+    '''
+    if behind: # behind is visible / non-sloped
+        return np.clip(90 + np.rad2deg(np.arcsin(np.sin(np.deg2rad(slope)) * np.cos(np.deg2rad(azimuth)))), a_min=90, a_max=None)
+    else:
+        return 90 + np.rad2deg(np.arcsin(np.sin(np.deg2rad(slope)) * np.cos(np.deg2rad(azimuth))))
+        
 
 # # No longer used
 # def getSimpleContour(image, thresh=0.5):
